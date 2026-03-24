@@ -12,7 +12,7 @@ docs/       — документация и решения типичных пр
 
 ---
 
-## 🧹 scripts/clean_sessions.py
+## 🧹 Скрипт-чистильщик сессий от base64 изображений
 
 **Проблема:** изображения из Telegram встраиваются в `.jsonl` файл сессии как base64. Сессия раздувается до 2MB+ и агент перестаёт отвечать с ошибкой:
 ```
@@ -21,15 +21,50 @@ docs/       — документация и решения типичных пр
 
 **Решение:** скрипт убирает base64 из сессий, оставляя текстовый placeholder. Оригинал уже лежит в `~/.openclaw/media/inbound/` — данные не теряются.
 
-**Результат:** сессия уменьшилась с 2.9MB → 1.8MB (убрано 11 картинок, сэкономлено 1MB).
+> P.S. Это known issue, разработчики планируют нативный фикс.
+
+---
+
+## ⚡ Быстрая установка — скинь это своему агенту
+
+Скопируй сообщение ниже и отправь своему агенту:
+
+---
+
+> Установи скрипт-чистильщик сессий от base64 изображений:
+>
+> 1. Скачай скрипт: `curl -o ~/scripts/clean_sessions.py https://raw.githubusercontent.com/Kudarty/openclaw-AiToms/main/scripts/clean_sessions.py`
+> 2. Создай папку если нет: `mkdir -p ~/scripts`
+> 3. Проверь что скрипт работает: `python3 ~/scripts/clean_sessions.py`
+> 4. Добавь крон который будет запускать скрипт каждые 2 часа автоматически (sessionTarget: isolated, NO_REPLY если всё ок, сообщи если ошибка)
+>
+> Скрипт убирает base64 изображения из файлов сессий OpenClaw — уменьшает размер сессий и предотвращает ошибку 429.
+
+---
+
+## Ручная установка
 
 ```bash
-python3 scripts/clean_sessions.py
+# Скачать скрипт
+curl -o ~/scripts/clean_sessions.py \
+  https://raw.githubusercontent.com/Kudarty/openclaw-AiToms/main/scripts/clean_sessions.py
+
+# Запустить вручную
+python3 ~/scripts/clean_sessions.py
 ```
 
-Можно поставить в крон каждые 2 часа — работает тихо.
-
-> P.S. Это known issue, разработчики планируют нативный фикс.
+Пример крона (добавить в OpenClaw):
+```json
+{
+  "name": "Session Image Cleaner",
+  "schedule": { "kind": "cron", "expr": "0 */2 * * *", "tz": "Europe/Moscow" },
+  "sessionTarget": "isolated",
+  "payload": {
+    "kind": "agentTurn",
+    "message": "Запусти: python3 ~/scripts/clean_sessions.py\nЕсли ошибка — сообщи. Иначе NO_REPLY."
+  }
+}
+```
 
 ---
 
